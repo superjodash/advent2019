@@ -1,27 +1,33 @@
-import numpy
-import sys
-import point as pt
-
-numpy.set_printoptions(threshold=sys.maxsize)
-
 mat = []
-dim = 25000
+dim = 20000
 center = [int(dim / 2), int(dim / 2)]
+#file = "Day03/Part2/sample0_30"
+#file = "Day03/Part2/sample1_610"
+#file = "Day03/Part2/sample2_410"
 file = "Day03/input"
+
+crossing = {}
 
 def main():
     global mat
+    global crossing
     wires = load_file()
     wnum = 1
     mat = [0 for x in range(dim * dim)]
     for wire in wires:
         plot(wire, wnum)
         wnum *= 2
-
-    points = mat_filter()
-    closest = get_closest_point(points)
-    print(f"Closes point {closest}")
-    #mat_dump()
+    plot(wires[0], 1)
+    
+    #points = mat_filter()
+    #closest = get_closest_point(points)
+    #print(f"Closes point {closest}")
+    print(crossing)
+    lowest = 100000000
+    for c in crossing:
+        lowest = min(lowest, crossing[c]["steps"])
+    print(f"Lowest value {lowest}")
+    mat_dump()
 
 
 def load_file():
@@ -54,6 +60,7 @@ def plot(wire, wirenum):
     x = center[0]
     y = center[1]
     mat_write(x, y, 9)
+    steps = 0
     for point in wire:
         d = point[0] # direction
         v = int(point[1:]) # vector
@@ -71,11 +78,13 @@ def plot(wire, wirenum):
             dx -= v
             v *= -1
 
-        draw_line(x, y, vert, v, wirenum)
+        draw_line(x, y, vert, v, wirenum, steps)
         x = dx
         y = dy
+        steps += abs(v)
 
-def draw_line(x, y, vert, l, value):
+def draw_line(x, y, vert, l, value, steps):
+    global crossing
     # x,y - start position
     # vert(ical) - if true, inc y, else inc x
     # l(ength) - if negative, go opposite direction
@@ -97,6 +106,17 @@ def draw_line(x, y, vert, l, value):
                 pass
             else:
                 #print(f"+)writing ({x},{dy}): {8}")
+                vv = steps+m
+                if(rev):
+                    vv = steps+mag-m+1
+                key = f"{x},{dy}"
+                sp = crossing.get(key)
+                if(sp != None and sp["count"] < 2):
+                    crossing[key]["steps"] = sp["steps"]+vv
+                    crossing[key]["count"] = sp["count"] + 1
+                else:
+                    crossing.update({key : {"steps":vv, "count":1}})
+                print({"p":[x,dy], "steps":vv, "wire":value})
                 mat_write(x, dy, 8)
 
     else:
@@ -113,6 +133,18 @@ def draw_line(x, y, vert, l, value):
                 pass
             else:
                 #print(f"+)writing ({dx},{y}): {8}")
+                vv = steps+m
+                if(rev):
+                    vv = steps+mag-m+1
+                key = f"{dx},{y}"
+                # NOTE: only count the first match - ignore any subsequent matches
+                sp = crossing.get(key)
+                if(sp != None and sp["count"] < 2):
+                    crossing[key]["steps"] = sp["steps"]+vv
+                    crossing[key]["count"] = sp["count"] + 1
+                else:
+                    crossing.update({key : { "steps":vv, "count":1}})
+                print({"p":[dx,y], "steps":vv, "wire":value}) # subtract mag+1 because drawing from right
                 mat_write(dx, y, 8)
 
 def mat_filter():
