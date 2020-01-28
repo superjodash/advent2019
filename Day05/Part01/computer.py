@@ -18,14 +18,16 @@ class Computer:
     def run(self):
         instr = self.instr_next()
         op = self.instr_op(instr)
-        print(f"Instruction: {op}")
+        #print(f"Instruction: {op}")
         while(op != 99):
-            # print('op: ', op)
+            #print('ptr: ', self.instrptr)
+            if self.instrptr == 221:
+                self.instrptr = 221
             params = self.ops.get(op)
             # print('params count', params)
             if params == None:
                 # Unknown OpCode
-                raise ValueError(op)
+                raise ValueError(op, "Invalid opcode")
             params -= 1
             modes = self.instr_modes(instr, params)
             if op == 1:
@@ -38,19 +40,20 @@ class Computer:
                 self.op_output(modes, self.instr_nextn(params))
             elif op == 99:
                 return
-            op = self.instr_next()
+            #self.instrptr += params
+            instr = self.instr_next()
+            op = self.instr_op(instr)
 
     def instr_op(self, instr):
         return int(str(instr)[-2:])
 
     def instr_modes(self, instr, params: int):
-        lo = len(str(instr)[-2:])
         sinstr = str(instr)
-        ml = len(sinstr) - lo
+        sinstrl = len(sinstr)
+        lo = len(sinstr[-2:])     
+        ml = sinstrl - lo
         md = {}
         modes = sinstr[0:ml][::-1]  # get modes in reverse
-        # if(lo < 3):
-        #    modes = ""
         lmodes = len(modes)
         for i in range(0, params):
             if i < lmodes:
@@ -68,6 +71,12 @@ class Computer:
         args = []
         for i in range(0, n):
             args.append(self.instr_next())
+        return args
+
+    def instr_peekn(self, n):
+        args = []
+        for i in range(0, n):
+            args.append(self.memory[self.instrptr + i])
         return args
 
     def memory_write(self, index, value):
@@ -109,10 +118,10 @@ class Computer:
         if len(params) != 1:
             raise ValueError(params)
         p1 = self.memory_read(params[0]) if modes.get(0) == 0 else params[0]
-        self.memory_write(p1, int(input()))
+        self.memory_write(p1, int(input("Input:")))
 
     def op_output(self, modes, params):
         if len(params) != 1:
             raise ValueError(params)
         p1 = self.memory_read(params[0]) if modes.get(0) == 0 else params[0]
-        print(p1)
+        print(f"[{p1}]")
