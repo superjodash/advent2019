@@ -1,4 +1,5 @@
 import sys
+from acu import AmplifierControlUnit
 import computer
 
 
@@ -33,12 +34,13 @@ def runTests():
         maxVal = 0
         maxSeq = ""
         for seq in sequences:
-            output = runProgram(test, seq)
+            unit = AmplifierControlUnit(seq, test)
+            output = unit.run()
             if(output > maxVal):
                 maxVal = output
                 maxSeq = seq
             maxVal = max(maxVal, output)
-        print(f"result: {maxVal}, seq: {maxSeq}, expected: {expected}")
+        print(f"result: {maxVal}, expected: {expected}, seq: {maxSeq}")
 
 
 def runProgram(intcode, sequence):

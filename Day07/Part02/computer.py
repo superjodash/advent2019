@@ -6,9 +6,10 @@ class Computer:
     instrptr: int = 0               # Instruction Pointer
     memory = []                     # memory
     # load input which will be read sequentially upon read instruction
-    input_queue = deque()
-    output_queue = deque()
+    __input_queue = []
+    __output_queue = []
     last_output = 0
+    __halt = False
     ops = {
         # OpCodes {code: parameter count including instruction }
         1: 4,       # ADD(P1,P2,DEST)
@@ -29,11 +30,13 @@ class Computer:
     def run(self):
         while(self.step()):
             pass
-        return self.output_queue
+        return self.__output_queue
 
     def step(self):
-        instr = self.instr_next()
-        op = self.instr_op(instr)
+        if(self.__halt):
+            return False
+        instr = self.__instr_next()
+        op = self.__instr_op(instr)
         if(self.debug):
             print(f"Instruction: {op}")
             print('ptr: ', self.instrptr)
@@ -42,29 +45,56 @@ class Computer:
             # Unknown OpCode
             raise ValueError(op, "Invalid opcode")
         params -= 1
-        modes = self.instr_modes(instr, params)
+        modes = self.__instr_modes(instr, params)
         if op == 1:
-            self.op_add(modes, self.instr_nextn(params))
+            self.__op_add(modes, self.__instr_nextn(params))
         elif op == 2:
-            self.op_mult(modes, self.instr_nextn(params))
+            self.__op_mult(modes, self.__instr_nextn(params))
         elif op == 3:
-            self.op_input(modes, self.instr_nextn(params))
+            self.__op_input(modes, self.__instr_nextn(params))
         elif op == 4:
-            self.op_output(modes, self.instr_nextn(params))
+            self.__op_output(modes, self.__instr_nextn(params))
         elif op == 5:
-            self.op_jumptrue(modes, self.instr_nextn(params))
+            self.__op_jumptrue(modes, self.__instr_nextn(params))
         elif op == 6:
-            self.op_jumpfalse(modes, self.instr_nextn(params))
+            self.op_jumpfalse(modes, self.__instr_nextn(params))
         elif op == 7:
-            self.op_lessthan(modes, self.instr_nextn(params))
+            self.__op_lessthan(modes, self.__instr_nextn(params))
         elif op == 8:
-            self.op_equals(modes, self.instr_nextn(params))
+            self.__op_equals(modes, self.__instr_nextn(params))
         elif op == 99:
+            self.__halt = True
             return False
         return True
 
-    def input_add(self, queue=[]):
-        self.input_queue.extend(queue)
+    def is_done(self):
+        return self.__halt
+
+    def input_add(self, queue):
+        if type(queue) in [list,tuple]:
+            self.__input_queue.extend(queue)
+        else:
+            self.__input_queue.append(queue)
+
+    def __input_pop(self):
+        if(self.__input_count() > 0):
+            val = self.__input_queue[0]
+            self.__input_queue = self.__input_queue[1:]
+            return val
+        return None
+
+    def __input_count(self):
+        return len(self.__input_queue)
+
+    def output_pop(self):
+        if(self.output_count() > 0):
+            val = self.__output_queue[0]
+            self.__output_queue = self.__output_queue[1:]
+            return val
+        return None
+
+    def output_count(self):
+        return len(self.__output_queue)
 
     """
     *********************************
@@ -72,33 +102,33 @@ class Computer:
     *********************************
     """
 
-    def instr_next(self):
+    def __instr_next(self):
         instr = self.memory[self.instrptr]
         self.instrptr += 1
         return instr
 
-    def instr_nextn(self, n):
+    def __instr_nextn(self, n):
         args = []
         for i in range(0, n):
-            args.append(self.instr_next())
+            args.append(self.__instr_next())
         return args
 
-    def instr_peek(self):
+    def __instr_peek(self):
         return self.memory[self.instrptr]
 
-    def instr_peekn(self, n):
+    def __instr_peekn(self, n):
         args = []
         for i in range(0, n):
             args.append(self.memory[self.instrptr + i])
         return args
 
-    def instr_set(self, addr):
+    def __instr_set(self, addr):
         self.instrptr = addr
 
-    def instr_op(self, instr):
+    def __instr_op(self, instr):
         return int(str(instr)[-2:])
 
-    def instr_modes(self, instr, params: int):
+    def __instr_modes(self, instr, params: int):
         sinstr = str(instr)
         sinstrl = len(sinstr)
         lo = len(sinstr[-2:])
@@ -119,13 +149,17 @@ class Computer:
     *********************************
     """
 
-    def memory_write(self, index, value):
+    def __memory_write(self, index, value):
+        if(index >= len(self.memory)):
+            raise IndexError(index, "buffer overrun")
         self.memory[index] = value
 
-    def memory_read(self, index):
+    def __memory_read(self, index):
+        if(index >= len(self.memory)):
+            raise IndexError(index, "buffer overrun")
         return self.memory[index]
 
-    def memory_dump(self):
+    def __memory_dump(self):
         return self.memory
 
     """
@@ -134,7 +168,7 @@ class Computer:
     *********************************
     """
 
-    def op_add(self, modes, params):
+    def __op_add(self, modes, params):
         """ 
         Opcode 1 is add:
             add the first two parameter values and store the result in the position stored in the third parameter
@@ -142,15 +176,15 @@ class Computer:
         # expecting 3 parameters
         if len(params) != 3:
             raise ValueError(params)
-        p1 = self.memory_read(params[0]) if modes.get(0) == 0 else params[0]
-        p2 = self.memory_read(params[1]) if modes.get(1) == 0 else params[1]
+        p1 = self.__memory_read(params[0]) if modes.get(0) == 0 else params[0]
+        p2 = self.__memory_read(params[1]) if modes.get(1) == 0 else params[1]
         reg = params[2]  # write parameters are always in position mode
 
         val = p1 + p2
         # print(f"putting {val} to index {reg} ")
-        self.memory_write(reg, val)
+        self.__memory_write(reg, val)
 
-    def op_mult(self, modes, params):
+    def __op_mult(self, modes, params):
         """ 
         Opcode 2 is multiply:
             multiply the first two parameter values and store the result in the position stored in the third parameter
@@ -158,15 +192,15 @@ class Computer:
         # expecting 3 parameters
         if len(params) != 3:
             raise ValueError(params)
-        p1 = self.memory_read(params[0]) if modes.get(0) == 0 else params[0]
-        p2 = self.memory_read(params[1]) if modes.get(1) == 0 else params[1]
+        p1 = self.__memory_read(params[0]) if modes.get(0) == 0 else params[0]
+        p2 = self.__memory_read(params[1]) if modes.get(1) == 0 else params[1]
         reg = params[2]  # write parameters are always in position mode
 
         val = p1 * p2
         # print(f"putting {val} to index {reg} ")
-        self.memory_write(reg, val)
+        self.__memory_write(reg, val)
 
-    def op_input(self, modes, params):
+    def __op_input(self, modes, params):
         """
         Opcode 3 is input:
             take a single integer as input and saves it to the position given by its only parameter. 
@@ -175,24 +209,24 @@ class Computer:
             raise ValueError(params)
         p1 = params[0]  # write parameters are always in position mode
         inputValue = ""
-        if len(self.input_queue) > 0:
-            inputValue = self.input_queue.popleft()
+        if self.__input_count() > 0:
+            inputValue = self.__input_pop()
         else:
             inputValue = input("Input:")
-        self.memory_write(p1, int(inputValue))
+        self.__memory_write(p1, int(inputValue))
 
-    def op_output(self, modes, params):
+    def __op_output(self, modes, params):
         """
         Opcode 4 is output:
             outputs the value of its only parameter. 
         """
         if len(params) != 1:
             raise ValueError(params)
-        p1 = self.memory_read(params[0]) if modes.get(0) == 0 else params[0]
+        p1 = self.__memory_read(params[0]) if modes.get(0) == 0 else params[0]
         self.last_output = p1
-        self.output_queue.append(p1)
+        self.__output_queue.append(p1)
 
-    def op_jumptrue(self, modes, params):
+    def __op_jumptrue(self, modes, params):
         """ 
         Opcode 5 is jump-if-true:
             if the first parameter is non-zero, it sets the instruction pointer to the value from the second parameter.
@@ -200,11 +234,11 @@ class Computer:
         """
         if len(params) != 2:
             raise ValueError(params)
-        p1 = self.memory_read(params[0]) if modes.get(0) == 0 else params[0]
+        p1 = self.__memory_read(params[0]) if modes.get(0) == 0 else params[0]
         if p1 != 0:
-            p2 = self.memory_read(params[1]) if modes.get(
+            p2 = self.__memory_read(params[1]) if modes.get(
                 1) == 0 else params[1]
-            self.instr_set(p2)
+            self.__instr_set(p2)
 
     def op_jumpfalse(self, modes, params):
         """
@@ -214,13 +248,13 @@ class Computer:
         """
         if len(params) != 2:
             raise ValueError(params)
-        p1 = self.memory_read(params[0]) if modes.get(0) == 0 else params[0]
+        p1 = self.__memory_read(params[0]) if modes.get(0) == 0 else params[0]
         if p1 == 0:
-            p2 = self.memory_read(params[1]) if modes.get(
+            p2 = self.__memory_read(params[1]) if modes.get(
                 1) == 0 else params[1]
-            self.instr_set(p2)
+            self.__instr_set(p2)
 
-    def op_lessthan(self, modes, params):
+    def __op_lessthan(self, modes, params):
         """
         Opcode 7 is less than: 
             if the first parameter is less than the second parameter, it stores 1 in the position given by the third parameter. 
@@ -228,15 +262,15 @@ class Computer:
         """
         if len(params) != 3:
             raise ValueError(params)
-        p1 = self.memory_read(params[0]) if modes.get(0) == 0 else params[0]
-        p2 = self.memory_read(params[1]) if modes.get(1) == 0 else params[1]
+        p1 = self.__memory_read(params[0]) if modes.get(0) == 0 else params[0]
+        p2 = self.__memory_read(params[1]) if modes.get(1) == 0 else params[1]
         reg = params[2]  # write parameters are always in position mode
         if p1 < p2:
-            self.memory_write(reg, 1)
+            self.__memory_write(reg, 1)
         else:
-            self.memory_write(reg, 0)
+            self.__memory_write(reg, 0)
 
-    def op_equals(self, modes, params):
+    def __op_equals(self, modes, params):
         """
         Opcode 8 is equals: 
             if the first parameter is equal to the second parameter, it stores 1 in the position given by the third parameter. 
@@ -244,10 +278,10 @@ class Computer:
         """
         if len(params) != 3:
             raise ValueError(params)
-        p1 = self.memory_read(params[0]) if modes.get(0) == 0 else params[0]
-        p2 = self.memory_read(params[1]) if modes.get(1) == 0 else params[1]
+        p1 = self.__memory_read(params[0]) if modes.get(0) == 0 else params[0]
+        p2 = self.__memory_read(params[1]) if modes.get(1) == 0 else params[1]
         reg = params[2]  # write parameters are always in position mode
         if p1 == p2:
-            self.memory_write(reg, 1)
+            self.__memory_write(reg, 1)
         else:
-            self.memory_write(reg, 0)
+            self.__memory_write(reg, 0)
