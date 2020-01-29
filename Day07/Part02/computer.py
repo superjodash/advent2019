@@ -2,14 +2,7 @@ from collections import deque
 
 
 class Computer:
-    debug = False
-    instrptr: int = 0               # Instruction Pointer
-    memory = []                     # memory
-    # load input which will be read sequentially upon read instruction
-    __input_queue = []
-    __output_queue = []
-    last_output = 0
-    __halt = False
+
     ops = {
         # OpCodes {code: parameter count including instruction }
         1: 4,       # ADD(P1,P2,DEST)
@@ -24,6 +17,16 @@ class Computer:
     }
 
     def __init__(self, memory=[]):
+
+        self.debug = False
+        self.instrptr: int = 0               # Instruction Pointer
+        self.memory = []                     # memory
+        # load input which will be read sequentially upon read instruction
+        self.__input_queue = []
+        self.__output_queue = []
+        self.last_output = 0
+        self.__halt = False
+
         if len(memory) > 0:
             self.memory = memory.copy()
 
@@ -71,7 +74,7 @@ class Computer:
         return self.__halt
 
     def input_add(self, queue):
-        if type(queue) in [list,tuple]:
+        if type(queue) in [list, tuple]:
             self.__input_queue.extend(queue)
         else:
             self.__input_queue.append(queue)

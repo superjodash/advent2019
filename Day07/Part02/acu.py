@@ -1,12 +1,14 @@
 from computer import Computer
 
+
 class AmplifierControlUnit:
 
-    ampUnits = []
-    ampCount = 0
-    signal = 0
-
     def __init__(self, sequence, firmware):
+
+        self.ampUnits = []
+        self.ampCount = 0
+        self.signal = 0
+
         for a in range(0, len(sequence)):
             cx = Computer(firmware)
             v = sequence[a]
