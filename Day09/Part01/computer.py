@@ -205,8 +205,9 @@ class Computer:
         reg = params[2]  # write parameters are always in position mode
 
         val = p1 + p2
-        # print(f"putting {val} to index {reg} ")
         self.__memory_write(reg, val)
+        if(self.debug):
+            print(f"[OP] ADD({p1},{p2}) = {val} into [{reg}]")
 
     def __op_mult(self, modes, params):
         """ 
@@ -221,8 +222,9 @@ class Computer:
         reg = params[2]  # write parameters are always in position mode
 
         val = p1 * p2
-        # print(f"putting {val} to index {reg} ")
         self.__memory_write(reg, val)
+        if(self.debug):
+            print(f"[OP] MULT({p1},{p2}) = {val} into [{reg}]")
 
     def __op_input(self, modes, params):
         """
@@ -238,6 +240,8 @@ class Computer:
         else:
             inputValue = input("Input:")
         self.__memory_write(p1, int(inputValue))
+        if(self.debug):
+            print(f"[OP] INPUT({inputValue}) into [{p1}]")
 
     def __op_output(self, modes, params):
         """
@@ -249,6 +253,8 @@ class Computer:
         p1 = self.__memory_moderead(modes.get(0), params[0])
         self.last_output = p1
         self.__output_buffer.append(p1)
+        if(self.debug):
+            print(f"[OP] OUTPUT({p1})")
 
     def __op_jumptrue(self, modes, params):
         """ 
@@ -259,9 +265,11 @@ class Computer:
         if len(params) != 2:
             raise ValueError(params)
         p1 = self.__memory_moderead(modes.get(0), params[0])
+        p2 = self.__memory_moderead(modes.get(1), params[1])
         if p1 != 0:
-            p2 = self.__memory_moderead(modes.get(1), params[1])
             self.__instr_set(p2)
+        if(self.debug):
+            print(f"[OP] JMPT({p1}) = {p1 != 0} update instruction pointer to [{p2}]")
 
     def op_jumpfalse(self, modes, params):
         """
@@ -272,9 +280,11 @@ class Computer:
         if len(params) != 2:
             raise ValueError(params)
         p1 = self.__memory_moderead(modes.get(0), params[0])
+        p2 = self.__memory_moderead(modes.get(1), params[1])
         if p1 == 0:
-            p2 = self.__memory_moderead(modes.get(1), params[1])
             self.__instr_set(p2)
+        if(self.debug):
+            print(f"[OP] JMPF({p1}) = {p1 == 0} update instruction pointer to [{p2}]")
 
     def __op_lessthan(self, modes, params):
         """
@@ -287,10 +297,12 @@ class Computer:
         p1 = self.__memory_moderead(modes.get(0), params[0])
         p2 = self.__memory_moderead(modes.get(1), params[1])
         reg = params[2]  # write parameters are always in position mode
+        val = 0
         if p1 < p2:
-            self.__memory_write(reg, 1)
-        else:
-            self.__memory_write(reg, 0)
+            val = 1
+        self.__memory_write(reg, val)
+        if(self.debug):
+            print(f"[OP] LESS-THAN({p1}) = {p1 < p2} update to {val} reg [{reg}]")
 
     def __op_equals(self, modes, params):
         """
@@ -303,10 +315,13 @@ class Computer:
         p1 = self.__memory_moderead(modes.get(0), params[0])
         p2 = self.__memory_moderead(modes.get(1), params[1])
         reg = params[2]  # write parameters are always in position mode
+        val = 0
         if p1 == p2:
-            self.__memory_write(reg, 1)
-        else:
-            self.__memory_write(reg, 0)
+            val = 1
+        self.__memory_write(reg, val)
+        if(self.debug):
+            print(f"[OP] EQUALS({p1}) = {p1 == p2} update to {val} reg [{reg}]")
+
 
     def __op_adjustrelbase(self, modes, params):
         """
@@ -317,9 +332,13 @@ class Computer:
             raise ValueError(params)
         p1 = self.__memory_moderead(modes.get(0), params[0])
         self.__relativeBase += p1
+        if(self.debug):
+            print(f"[OP] RBASE({p1}) updated to {self.__relativeBase}")
 
     def __op_halt(self, modes, params):
         self.__halt = True
+        if(self.debug):
+            print(f"[OP] HALT")
 
     """
     *********************************
