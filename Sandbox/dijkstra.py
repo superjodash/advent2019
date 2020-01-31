@@ -1,6 +1,6 @@
 # Sample 1 - (3,4), 8 asteroids
 # Sample 2 - (5,8), 33 asteroids
-from grid import Grid
+from search import SquareGrid
 
 
 def main():
@@ -15,17 +15,17 @@ def main():
 
 
 def testing(width, height, amap):
-    g = Grid(width, height)
+    g = SquareGrid(width, height)
     g.walls = get_asteroid_coords(width, height, amap)
     # draw_grid(g)
 
     return ""
 
 
-def draw_grid(grid):
-    for y in range(grid.height):
-        for x in range(grid.width):
-            if((x, y) in grid.walls):
+def draw_grid(graph):
+    for y in range(graph.height):
+        for x in range(graph.width):
+            if((x, y) in graph.walls):
                 print("#", end="")
             else:
                 print(".", end="")
