@@ -1,4 +1,3 @@
-
 class Grid:
     def __init__(self, width, height):
         self.width = width
@@ -16,3 +15,7 @@ class Grid:
 
     def get(self, x, y):
         return self.points[self.coordinateToIndex(x,y)]
+
+    def length(self):
+        return self.width * self.height
+
