@@ -25,30 +25,37 @@ def testing(width, height, amap):
 
     return ""
 
+
 def runIteration(index, grid):
     slopes = {}
     astCount = 0
+    x2, y2 = grid.indexToCoordinate(index)
+    # only caluclate from an asteroid
+    if(grid.get(x2, y2) != 1):
+        return
+
     for y in range(grid.height):
         for x in range(grid.width):
-            x2, y2 = grid.indexToCoordinate(index)
             if grid.coordinateToIndex(x, y) == index:
                 continue
             if grid.get(x, y) == 1:
-                s = calcSlope(x, y, x2, y2)
-                if slopes.get((x,y)) != None:                  
+                s = calcSlope(x+1, y+1, x2+1, y2+1)
+                if slopes.get((x, y)) != None:
                     pass
                     # this slope is already in the collection; collision?
                 else:
-                    slopes[(x,y)] = calcSlope(x, y, x2, y2)
+                    slopes[(x, y)] = s
                     astCount += 1
 
                 # calc slope and keep
+
 
 def get_asteroid_coords(grid, amap):
     for y in range(grid.height):
         for x in range(grid.width):
             if(amap[y * grid.width + x] == "#"):
                 grid.add(x, y, 1)
+
 
 def draw_grid(grid):
     for y in range(grid.height):
@@ -60,7 +67,27 @@ def draw_grid(grid):
         print()
 
 
+"""
+https://stackoverflow.com/questions/328107/how-can-you-determine-a-point-is-between-two-other-points-on-a-line-segment
 
+def isBetween(a, b, c):
+    crossproduct = (c.y - a.y) * (b.x - a.x) - (c.x - a.x) * (b.y - a.y)
+
+    # compare versus epsilon for floating point values, or != 0 if using integers
+    if abs(crossproduct) > epsilon:
+        return False
+
+    dotproduct = (c.x - a.x) * (b.x - a.x) + (c.y - a.y)*(b.y - a.y)
+    if dotproduct < 0:
+        return False
+
+    squaredlengthba = (b.x - a.x)*(b.x - a.x) + (b.y - a.y)*(b.y - a.y)
+    if dotproduct > squaredlengthba:
+        return False
+
+    return True
+
+"""
 
 # def processMapA(width, height, amap):
 #     for y in range(0, height):
