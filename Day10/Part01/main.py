@@ -1,137 +1,96 @@
-# Sample 1 - (3,4), 8 asteroids
-# Sample 2 - (5,8), 33 asteroids
-from grid import Grid
-
+import math
 
 def main():
+    runTest("Day10/Part01/sample1_8.map", [(3,4), 8])
+    runTest("Day10/Part01/sample2_33.map", [(5,8), 33])
+    runTest("Day10/Part01/sample3_35.map", [(1,2), 35])
+    runTest("Day10/Part01/sample4_41.map", [(6,3), 41])
+    runTest("Day10/Part01/sample5_210.map", [(11,13), 210])
+    runTest("Day10/puzzle.map", None)
 
-    w, h, amap = load_file("Day10/Part01/sample1.map")
+def runTest(fileName, expected):
+    amap = load_file(fileName)
+    result = analyze(amap)
+    print(f"Best is {result[0]} with {result[1]} other asteroids detected")
+    if(expected != None):
+        assert result == expected, f"result should be {expected}"
 
-    print(f"Width: {w}, Height: {h}")
-    # renderMap(w, h, amap)
-    # result = processMapA(w, h, amap)
-    testing(w, h, amap)
-#    print(result)
+def analyze(amap):
+    maxcount = 0
+    maxcoord = None
 
-
-def testing(width, height, amap):
-    g = Grid(width, height)
-    get_asteroid_coords(g, amap)
-
-    for ix in range(g.length()):
-        runIteration(ix, g)
-
-    # draw_grid(g)
-
-    return ""
-
-
-def runIteration(index, grid):
-    slopes = {}
-    astCount = 0
-    x2, y2 = grid.indexToCoordinate(index)
-    # only caluclate from an asteroid
-    if(grid.get(x2, y2) != 1):
-        return
-
-    for y in range(grid.height):
-        for x in range(grid.width):
-            if grid.coordinateToIndex(x, y) == index:
+    for p in amap:
+        vals = {}
+        for p2 in amap:
+            if(p == p2):
                 continue
-            if grid.get(x, y) == 1:
-                s = calcSlope(x+1, y+1, x2+1, y2+1)
-                if slopes.get((x, y)) != None:
-                    pass
-                    # this slope is already in the collection; collision?
+            dy, dx = calcSlope(p[0], p[1], p2[0], p2[1])
+            s = 0
+            if(dy == 0 or dx == 0): 
+                if(dy == 0):
+                    if(dx > 0):
+                        key = "x0"
+                    else:
+                        key = "-x0"
                 else:
-                    slopes[(x, y)] = s
-                    astCount += 1
-
-                # calc slope and keep
-
-
-def get_asteroid_coords(grid, amap):
-    for y in range(grid.height):
-        for x in range(grid.width):
-            if(amap[y * grid.width + x] == "#"):
-                grid.add(x, y, 1)
-
-
-def draw_grid(grid):
-    for y in range(grid.height):
-        for x in range(grid.width):
-            if((x, y) in grid.walls):
-                print("#", end="")
+                    if(dy > 0):
+                        key = "y0"
+                    else:
+                        key = "-y0"
+                vv = vals.get(key)
+                if(vv == None):
+                    vals[key] = [p2]
+                else:
+                    vv.append(p2)
+                    vals[key] = vv
             else:
-                print(".", end="")
-        print()
-
-
-"""
-https://stackoverflow.com/questions/328107/how-can-you-determine-a-point-is-between-two-other-points-on-a-line-segment
-
-def isBetween(a, b, c):
-    crossproduct = (c.y - a.y) * (b.x - a.x) - (c.x - a.x) * (b.y - a.y)
-
-    # compare versus epsilon for floating point values, or != 0 if using integers
-    if abs(crossproduct) > epsilon:
-        return False
-
-    dotproduct = (c.x - a.x) * (b.x - a.x) + (c.y - a.y)*(b.y - a.y)
-    if dotproduct < 0:
-        return False
-
-    squaredlengthba = (b.x - a.x)*(b.x - a.x) + (b.y - a.y)*(b.y - a.y)
-    if dotproduct > squaredlengthba:
-        return False
-
-    return True
-
-"""
-
-# def processMapA(width, height, amap):
-#     for y in range(0, height):
-#         for x in range(0, width):
-#             count = runIteration(x, y, width, height, amap)
-
-#     return ""
-
-# def runIteration(cx,cy,width,height,amap):
-#     curr = cy * width + cx
-#     for y in range(0, height):
-#         for x in range(0, width):
-#             tindex = y * width + x
-#             if(curr == tindex):
-#                 continue
-#             test = amap[tindex]
-#             slope = calcSlope(cx, cy, x, y)
+                s = dy / dx
+                q = getQuad(dx, dy)
+                s2 = f"{q}{s}"
+                vv = vals.get(s2)
+                if(vv == None):
+                    vals[s2] = [p2]
+                else:
+                    vv.append(p2)
+                    vals[s2] = vv
+        lv = len(vals)
+        if(lv > maxcount):
+            maxcount = lv
+            maxcoord = p
+    
+    return [maxcoord, maxcount]
 
 
 def calcSlope(x1, y1, x2, y2):
-    y = y2 - y1
-    x = x2 - x1
-    return [x, y, y / x]
+    dy = y2 - y1
+    dx = x2 - x1
+    return [dy, dx]
 
+def calcDistance(x1, y1, x2, y2):
+    return ((x2 - x1) ** 2 ) + ((y2 - y1) ** 2)
 
-# def renderMap(width, height, amap):
-#     for h in range(height):
-#         line = ""
-#         for w in range(width):
-#             line += amap[h * width + w]
-#         print(line)
-
+def getQuad(x, y):
+    if(x > 0 and y > 0):
+        return 0
+    elif(x > 0 and y < 0):
+        return 1
+    elif(x < 0 and y > 0):
+        return 2
+    elif(x < 0 and y < 0):
+        return 4
 
 def load_file(filename):
     f = open(filename, 'r')
-    w = 0
-    h = 0
+    y = 0
     amap = []
     for l in f.read().splitlines():
-        w = len(l)
-        amap.extend(list(l))
-        h += 1
+        x = 0
+        for v in l:
+            if(v == "#"):
+                amap.append((x,y))
+            x += 1
+        y += 1
     f.close()
-    return [w, h, amap]
-
+    return amap
 
 main()
